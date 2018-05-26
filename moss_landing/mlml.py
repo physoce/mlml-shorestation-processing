@@ -17,7 +17,6 @@ import sys
 import numpy as np
 from glob import glob
 from datetime import datetime, timedelta
-from physoce import util
 try:
     import pandas as pd
 except ImportError:
@@ -176,7 +175,7 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
     # create date variables
     # put in a numpy array for easy indexing
     # new variable for datetime
-    dtime = np.array(util.list2date(d['utc_time'],'%Y-%m-%dT%H:%M:%SZ'))    
+    dtime = np.array(list2date(d['utc_time'],'%Y-%m-%dT%H:%M:%SZ'))    
 
     # remove duplicate times
     ii = np.where(np.diff(dtime) > timedelta(0.))[0]
@@ -232,3 +231,17 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
     d.attrs['history'] = d.attrs['history'] + 'attributes added to dataset using physoce.obs.mlml._add_metadata_xarray: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
             
+def list2date(datestr_list,fmt='%a %b %d %H:%M:%S %Y'):
+    '''Convert a list of date strings to datetime format.
+
+    INPUT:
+    datestr_list: a list of strings that represent dates
+    fmt: format of the date string, as would be input to strftime() or strptime()
+
+    see https://docs.python.org/library/datetime.html#strftime-and-strptime-behavior
+
+    OUTPUT:
+    list of datetimes
+    '''
+    datetime_list = [datetime.strptime(datestr, fmt) for datestr in datestr_list]
+    return datetime_list
