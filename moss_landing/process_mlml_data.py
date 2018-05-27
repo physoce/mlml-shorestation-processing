@@ -14,5 +14,7 @@ nc_dir = mlml_data_path.netcdf()
 sw_nc = nc_dir+'mlml_seawater.nc'
 w_nc = nc_dir+'mlml_weather.nc'
 
-mlml.make_netcdf(sw_dir,sw_nc,'seawater',download=True,overwrite=True)
-mlml.make_netcdf(w_dir,w_nc,'weather',download=True,overwrite=True)
+ds = mlml.read_csv_data(sw_dir,format='dataset')
+
+#mlml.make_netcdf(sw_dir,sw_nc,'seawater',download=True,overwrite=True)
+#mlml.make_netcdf(w_dir,w_nc,'weather',download=True,overwrite=True)

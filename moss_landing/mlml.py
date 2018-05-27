@@ -137,8 +137,8 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
     
     #initialize dictionary with key and empty list for each variable
     d = dict()
-    for ii,var in enumerate(varnames[0:]):
-        d[varnames[ii]] = []
+    for var in varnames:
+        d[var] = []
     
     # specify which columns contain numeric data
     floatcols = range(2,len(varnames))
@@ -209,6 +209,21 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
         d['dtime'] = dtime
     
     return d
+   
+def list2date(datestr_list,fmt='%a %b %d %H:%M:%S %Y'):
+    '''Convert a list of date strings to datetime format.
+
+    INPUT:
+    datestr_list: a list of strings that represent dates
+    fmt: format of the date string, as would be input to strftime() or strptime()
+
+    see https://docs.python.org/library/datetime.html#strftime-and-strptime-behavior
+
+    OUTPUT:
+    list of datetimes
+    '''
+    datetime_list = [datetime.strptime(datestr, fmt) for datestr in datestr_list]
+    return datetime_list
     
 def _add_metadata_xarray(d,station,readme_file):
     """
@@ -230,18 +245,3 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         d.attrs['readme'] = contents
         
     d.attrs['history'] = d.attrs['history'] + 'attributes added to dataset using physoce.obs.mlml._add_metadata_xarray: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
-            
-def list2date(datestr_list,fmt='%a %b %d %H:%M:%S %Y'):
-    '''Convert a list of date strings to datetime format.
-
-    INPUT:
-    datestr_list: a list of strings that represent dates
-    fmt: format of the date string, as would be input to strftime() or strptime()
-
-    see https://docs.python.org/library/datetime.html#strftime-and-strptime-behavior
-
-    OUTPUT:
-    list of datetimes
-    '''
-    datetime_list = [datetime.strptime(datestr, fmt) for datestr in datestr_list]
-    return datetime_list
