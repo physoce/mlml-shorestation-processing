@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+import os
 import mlml
 
 sys.path.append('..')
@@ -7,14 +8,14 @@ import mlml_data_path
 
 # get paths of data files
 # paths to data should be modified in mlml_data_path.py
-sw_dir = mlml_data_path.seawater()
-w_dir = mlml_data_path.weather()
+sw_dir = mlml_data_path.moss_landing()
 nc_dir = mlml_data_path.netcdf()
 
-sw_nc = nc_dir+'mlml_seawater.nc'
-w_nc = nc_dir+'mlml_weather.nc'
+nc_tempdir = os.path.join(nc_dir,'temp')
 
-ds = mlml.read_csv_data(sw_dir,format='dataset')
+if not os.path.exists(nc_tempdir):
+    os.mkdir(nc_tempdir)
 
-#mlml.make_netcdf(sw_dir,sw_nc,'seawater',download=True,overwrite=True)
-#mlml.make_netcdf(w_dir,w_nc,'weather',download=True,overwrite=True)
+sw_nc = os.path.join(nc_tempdir,'moss_landing_fromcsv.nc')
+
+mlml.make_netcdf(sw_dir,sw_nc,'seawater',download=False)

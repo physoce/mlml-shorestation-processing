@@ -127,51 +127,62 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
     '''
     
     file_list = glob(data_dir+'*.csv')
-    
-    # get list of variable names from header of first file
-    f = open(file_list[0],'r')
-    header = f.readline()
-    f.close()
-    header = header.strip('\r\n')
-    varnames = header.split(',')
-    
-    #initialize dictionary with key and empty list for each variable
-    d = dict()
-    for var in varnames:
-        d[var] = []
-    
-    # specify which columns contain numeric data
-    floatcols = range(2,len(varnames))
-    allcols = range(0,len(varnames))
-    strcols = list(set(allcols)-set(floatcols))
-    
-    for file_name in file_list:
-        print('reading ' + file_name)        
+
+    for fi,file_name in enumerate(file_list):
+        print('reading ' + file_name)  
+        
+        # get list of variable names from header of first file
+        f = open(file_name,'r')
+        header = f.readline()
+        f.close()
+        header = header.strip('\r\n')
+        varnames = header.split(',')
+
+        #if first file, initialize dictionary with key and empty list for each variable
+        if fi == 0:
+            d = dict()
+            for var in varnames:
+                d[var] = []        
+        
+        # specify which columns contain numeric data
+        floatcols = range(2,len(varnames))
+        allcols = range(0,len(varnames))
+        strcols = list(set(allcols)-set(floatcols))        
         
         # get numeric data, with missing values as NaN
-        datamasked = np.genfromtxt(file_name,
+        try:
+            datamasked = np.genfromtxt(file_name,
+                                 skip_header=1,
+                                 delimiter=',',
+                                 missing_values='-99999',
+                                 usemask=True)
+            data = datamasked.filled(np.nan)
+ 
+            # get string data
+            datastr = np.genfromtxt(file_name,
                              skip_header=1,
                              delimiter=',',
-                             missing_values='-99999',
-                             usemask=True)
-        data = datamasked.filled(np.nan)
+                             usecols=tuple(strcols),
+                             dtype=str)
+
+            # append data variables    
+            if data.size != 0:    
+                for si,col in enumerate(strcols):
+                    vname = varnames[col]
+                    d[vname] = np.append(d[vname],datastr[:,si])
+                for col in floatcols:
+                    vname = varnames[col]
+                    if vname not in d.keys():
+                        d[vname] = np.nan*np.zeros(np.shape(d[varnames[col-1]])) # create new variable (all NaN's)
+                    else:
+                        d[vname] = np.append(d[vname],data[:,col]) # append data
+                for key,value in d.items():
+                    if key not in varnames:
+                        d[key] = np.append(d[key],np.nan*np.zeros(np.shape(data[:,2]))) # append NaN's
+                
+        except:
+            pass
         
-        # get string data
-        datastr = np.genfromtxt(file_name,
-                         skip_header=1,
-                         delimiter=',',
-                         usecols=tuple(strcols),
-                         dtype=str)
-        
-        # append data variables    
-        if data.size != 0:    
-            for col in floatcols:
-                vname = varnames[col]
-                d[vname] = np.append(d[vname],data[:,col])
-            for si,col in enumerate(strcols):
-                vname = varnames[col]
-                d[vname] = np.append(d[vname],datastr[:,si])
-    
     # create date variables
     # put in a numpy array for easy indexing
     # new variable for datetime
@@ -180,8 +191,8 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
     # remove duplicate times
     ii = np.where(np.diff(dtime) > timedelta(0.))[0]
     dtime = dtime[ii]
-    for var in varnames:
-        d[var] = d[var][ii]
+    for key,value in d.items():
+        d[key] = d[key][ii]
         
     # Try loading in pandas or xarray format if specified, default to dictionary format
     if format == 'dataset':
