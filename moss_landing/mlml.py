@@ -26,13 +26,16 @@ try:
 except ImportError:
     pass
 
-def make_netcdf(station_dir,netcdf_file,station,download=False,overwrite=False):
+def make_netcdf(station_dir,netcdf_dir,netcdf_prefix,station,download=False,overwrite=False):
     """
 Create a netcdf file containing MLML historical seawater or weather data. The file will be created from csv and readme files already on disk, or they can be downloaded.
 
 INPUT:
 station_dir - string specifying the location of csv files (e.g. '/home/username/data/')
-netcdf_file - string specifying the location and name of netcdf file to be created (e.g. '/home/username/data/mlml_seawater.nc')
+netcdf_dir - string specifying the location of netcdf files to be created (e.g. '/home/username/data/')
+netcdf_prefix - string specifying filename pattern for netcdf files 
+                the year will be appended this prefix
+                (e.g. 'moss_landing_' for moss_landing_2015.nc, moss_landing_2016.nc, etc.)
 station     - either 'seawater' or 'weather' (default: 'seawater')
 download    - boolean specifying whether to download new files
               (default: False)
@@ -48,11 +51,19 @@ overwrite   - boolean specifying whether to overwrite the existing files, only u
     
     # specify location of readme file and add metadata to dataset
     readme_file = station_dir + '1_README.TXT'
-    _add_metadata_xarray(d,station,readme_file)
-    d.attrs['history'] = d.attrs['history'] + 'netcdf file created using physoce.obs.mlml.make_netcdf(station_dir'+station_dir+',netcdf_file='+netcdf_file+',station='+station+'download='+str(download)+',overwrite='+str(overwrite)+'): ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', '
+    d = add_metadata(d,station,readme_file)
     
-    # create netcdf file
-    d.to_netcdf(netcdf_file,mode='w')
+    # Additional processing
+    d = cleanup_raw(d)  
+    d = add_flags(d)  
+    
+    d.attrs['history'] = d.attrs['history'] + 'netcdf file created using mlml.make_netcdf(station_dir'+station_dir+',netcdf_dir='+netcdf_dir+',netcdf_prefix='+netcdf_prefix+',station='+station+'download='+str(download)+',overwrite='+str(overwrite)+'): ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ')'
+    
+    # create netcdf files
+    prefix = os.path.join(netcdf_dir,netcdf_prefix)
+    years, datasets = zip(*d.groupby('time.year'))
+    paths = [prefix+'%s.nc' % y for y in years]
+    xr.save_mfdataset(datasets, paths)
         
 def download_station_data(station_dir,station='seawater',overwrite=True):
     '''
@@ -213,7 +224,7 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
         d = pd.DataFrame(d,index=dtime)
         d.index.name = 'time'        
         d = xr.Dataset(d)
-        d.attrs['history'] = 'dataset created using physoce.obs.mlml.read_csv_data: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
+        d.attrs['history'] = 'dataset created using mlml.read_csv_data: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
     else:
         # default format: dictionary containing numpy arrays
         d['dtime'] = []    
@@ -236,23 +247,172 @@ def list2date(datestr_list,fmt='%a %b %d %H:%M:%S %Y'):
     datetime_list = [datetime.strptime(datestr, fmt) for datestr in datestr_list]
     return datetime_list
     
-def _add_metadata_xarray(d,station,readme_file):
+def add_metadata(ds,station,readme_file):
     """
 Add metadata to xarray dataset. Currently this adds lat and lon coordinates and puts the contents of the readme in an attribute. For the weather data, the anemometer height is also added as a coordinate.
     """    
     
     if station is 'seawater':
-        d.coords['lon'] = -121.7915
-        d.coords['lat'] = 36.8025
+        ds.coords['lon'] = -121.7915
+        ds.coords['lat'] = 36.8025
+        
+        ds.attrs['title'] = 'Historical Seawater Data - Moss Landing Marine Labs'
+        ds.attrs['institution'] = 'Moss Landing Marine Labs'
+        ds.attrs['disclaimer'] = 'Moss Landing Marine Laboratories (MLML) provides these data "as is", with no warranty, expressed or implied, of the data quality or consistency. It is provided without support and without obligation on the part of MLML to assist in its use, correction, modification, or enhancement. For use in publication, authors should obtain written permission from the director of MLML, and acknowledge MLML as the data source in those publications.'
+        ds.attrs['contacts'] = 'Data Manager: Jason Adelaars (jadelaars@mlml.calstate.edu), MLML Director: Jim Harvey (jharvey@mlml.calstate.edu)'
+        ds.attrs['citation'] = 'Moss Landing Marine Labs. Historical Seawater Data (insert date range) [Internet]. [cited (insert date of download)]. Available from: pubdata.mlml.calstate.edu'
+        ds.attrs['comment'] = 'Seawater data observations are collected from raw seawater drawn through an intake pipe. Prior to October 31, 2013, the intake opening was set at a depth of ~18.3 m (60ft) below mean lower low water (MLLW). Due to sediment build-up around the pipe, the intake opening was raised to ~16.6m (54.4ft) below MLLW on October 31, 2013. The intake opening is located at 36.8025N and 121.7915W\\r\\nThe seawater sensors are cleaned of biofouling agents on a weekly/twice-weekly interval, though some data drift can be observed in transmission, beam attenution, and fluorescence. Full maintenance Log available at: https://docs.google.com/a/mlml.calstate.edu/spreadsheet/ccc?key=0AnH2QAt-nlAldEFwY2ZyNUV6amJtLXllMDljdmM1SFE&pli=1#gid=0'
+        
+        ds['ba'].attrs['long_name'] = 'Beam attenuation'
+        ds['ba'].attrs['standard_name'] = 'volume_beam_attenuation_coefficient_of_radiative_flux_in_sea_water'
+        ds['ba'].attrs['units'] = 'm-1'
+        ds['ba'].attrs['comment'] = 'sensor: C-Star Transmissometer (10cm)'
+        
+        ds['co2'].attrs['standard_name'] = 'partial_pressure_of_carbon_dioxide_in_sea_water'
+        ds['co2'].attrs['units'] = 'uatm'
+        ds['co2'].attrs['comment'] = 'sensor: Turner C-Sense'      
+        
+        ds['cond'].attrs['standard_name'] = 'sea_water_electrical_conductivity'
+        ds['cond'].attrs['units'] = 'S m-1'
+        ds['cond'].attrs['comment'] = 'sensor: Seabird SBE19 CTD'      
+        
+        ds['do2'].attrs['standard_name'] = 'mole_concentration_of_dissolved_molecular_oxygen_in_sea_water'
+        ds['do2'].attrs['units'] = 'umol L-1'
+        ds['do2'].attrs['comment'] = 'Sensor: AADI Oxygen Optode'      
+        
+        ds['fluor'].attrs['standard_name'] = 'chlorophyll_concentration_in_sea_water'
+        ds['fluor'].attrs['units'] = 'ug L-1'
+        ds['fluor'].attrs['comment'] = 'Sensor: WetStar Fluorometer' 
+        
+        ds['osat'].attrs['standard_name'] = 'fractional_saturation_of_oxygen_in_sea_water'
+        ds['osat'].attrs['units'] = 'percent'
+        
+        ds['otemp'].attrs['standard_name'] = 'sea_water_temperature'
+        ds['otemp'].attrs['units'] = 'degree_C'
+        ds['otemp'].attrs['comment'] = 'Sensor: AADI Oxygen Optode'
+        
+        ds['ph'].attrs['standard_name'] = 'sea_water_ph_reported_on_total_scale'
+        ds['ph'].attrs['units'] = '1'
+        ds['ph'].attrs['comment'] = 'Sensor: Honeywell Durafet III'
+
+        ds['sal'].attrs['standard_name'] = 'sea_water_practical_salinity'
+        ds['sal'].attrs['units'] = '1'
+        ds['sal'].attrs['comment'] = 'sensor: Seabird SBE19 CTD'
+        
+        ds['temp'].attrs['standard_name'] = 'sea_water_temperature'
+        ds['temp'].attrs['units'] = 'degree_C'
+        ds['temp'].attrs['comment'] = 'sensor: Seabird SBE19 CTD'
+        
+        ds['trans'].attrs['long_name'] = 'Beam transmission'
+        ds['trans'].attrs['units'] = 'percent'
+        ds['trans'].attrs['comment'] = 'sensor: C-Star Transmissometer (10cm)'     
+        
+        
+        
     elif station is 'weather':
-        d.coords['lon'] = -121.78842
-        d.coords['lat'] = 36.80040
-        d.coords['z'] = 3.3
-        d.coords['z'].attrs['name'] = 'anemometer height'
-        d.coords['z'].attrs['units'] = 'meters'
+        ds.coords['lon'] = -121.78842
+        ds.coords['lat'] = 36.80040
+        ds.coords['z'] = 3.3
+        ds.coords['z'].attrs['name'] = 'anemometer height'
+        ds.coords['z'].attrs['units'] = 'meters'
         
     with open(readme_file) as f:
         contents = f.read()
-        d.attrs['readme'] = contents
+        ds.attrs['readme'] = contents
         
-    d.attrs['history'] = d.attrs['history'] + 'attributes added to dataset using physoce.obs.mlml._add_metadata_xarray: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
+    ds.attrs['history'] = ds.attrs['history'] + 'attributes added to dataset using mlml.add_metadata: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
+    
+    return ds
+    
+def cleanup_raw(ds):
+    '''
+    Clean up variables by removing "raw" data
+    '''
+
+    # Loop through variables
+    for varname, values in ds.data_vars.items():
+        # If flag is NaN, data is missing
+        if '_flg' in varname:
+            ii, = np.where(np.isnan(values))
+            ds[varname][ii] = 9.
+        # Remove "raw" variables
+        if '_raw' in varname:
+            ds = ds.drop(varname)
+    if 'phrawv' in ds.keys():
+        ds = ds.drop('phrawv')
+    # Remove tide variables
+    if 'tide' in ds.keys():
+        ds = ds.drop('tide')
+    if 'tide_flg' in ds.keys():
+        ds = ds.drop('tide_flg')
+        
+    ds.attrs['history'] = ds.attrs['history'] + 'raw data variables dropped using mlml.cleanup_raw: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
+    
+    return ds
+
+def add_flags(ds):
+    '''
+    Flag questionable data based on users' subjective examination and automated criteria beyond initial QARTOD.
+    '''
+    
+    # pH
+    ph_ques_dates = [['2017-07-17 21:00','2017-07-19 19:30'],
+                     ['2017-03-17 17:00','2017-05-17 19:30']]
+
+    for drange in ph_ques_dates:
+        ii, = np.where((ds['time']>=np.datetime64(drange[0]))
+                       & (ds['time']<=np.datetime64(drange[1])))
+        ds['ph_flg'][ii] = 3.
+
+    # All variables
+    var_list = ['ba','cond','do2','fluor','osat','otemp','ph','sal','temp','trans','co2']
+    
+    all_ques_dates = [['2017-05-03 18:13','2017-05-03 22:00'],
+                      ['2017-06-07 19:00','2017-06-07 22:00'],
+                      ['2017-07-03 06:20','2017-07-03 06:30'],
+                      ['2017-07-18 18:00','2017-07-18 21:00']
+                     ]
+    for drange in all_ques_dates:
+        ii, = np.where((ds['time']>=np.datetime64(drange[0]))
+                       & (ds['time']<=np.datetime64(drange[1])))
+        for var in var_list:
+            ds[var+'_flg'][ii] = 3.
+
+    # CO2
+    co2_ques_dates = [['2015-01-01 00:00','2017-03-08 00:00'], # range set to 1000 ppm on first deployment (too low)
+                      ['2017-07-18 20:01','2017-07-18 20:36'],
+                      ['2017-07-12 21:00','2017-07-17 19:25'],
+                      ['2017-07-05 23:00','2017-07-08 01:29'],
+                      ['2017-03-22 17:06','2017-03-23 15:24']]
+
+    for drange in co2_ques_dates:
+        ii, = np.where((ds['time']>=np.datetime64(drange[0]))
+                       & (ds['time']<=np.datetime64(drange[1])))
+        ds['co2_flg'][ii] = 3.
+        
+    # salinity spikes    
+    ii, = np.where(np.abs(np.diff(ds['sal'])) > 0.2)
+    ii = ii
+    ds['sal_flg'][ii] = 3.
+    
+    # isolated salinity points
+    ii, = np.where(np.isnan(ds['sal'][1:-1]+ds['sal'][2:]) & np.isnan(ds['sal'][1:-1]+ds['sal'][:-2]))
+    ii = ii + 1
+    ds['sal_flg'][ii] = 3.
+    
+    # oxygen spikes
+    ii, = np.where(np.abs(np.diff(ds['do2'])) > 100)
+    ii = ii
+    ds['do2_flg'][ii] = 3.
+    
+    # isolated oxygen points(or pairs of points)
+    ii, = np.where(np.isnan(ds['do2'][1:-1]+ds['do2'][2:]) & np.isnan(ds['do2'][1:-1]+ds['do2'][:-2]))
+    ii = ii + 1
+    ds['do2_flg'][ii] = 3.
+    ii, = np.where(np.isnan(ds['do2'][1:-1]+ds['do2'][2:]) & np.isnan(ds['do2'][1:-1]+ds['do2'][:-2]))
+    ii = ii + 1
+    ds['do2_flg'][ii] = 3.
+    
+    ds.attrs['history'] = ds.attrs['history'] + 'Flags added using mlml.add_flags: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
+    
+    return ds
