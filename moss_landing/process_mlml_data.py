@@ -13,7 +13,7 @@ import mlml_data_path
 sw_dir = mlml_data_path.moss_landing()
 nc_dir = mlml_data_path.netcdf()
 
-# paths to intermediate files
+# path to final netcdf files
 nc_dir = os.path.join(nc_dir,'moss_landing')
 nc_prefix = 'moss_landing_'
 

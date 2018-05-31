@@ -263,52 +263,135 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         ds.attrs['citation'] = 'Moss Landing Marine Labs. Historical Seawater Data (insert date range) [Internet]. [cited (insert date of download)]. Available from: pubdata.mlml.calstate.edu'
         ds.attrs['comment'] = 'Seawater data observations are collected from raw seawater drawn through an intake pipe. Prior to October 31, 2013, the intake opening was set at a depth of ~18.3 m (60ft) below mean lower low water (MLLW). Due to sediment build-up around the pipe, the intake opening was raised to ~16.6m (54.4ft) below MLLW on October 31, 2013. The intake opening is located at 36.8025N and 121.7915W\\r\\nThe seawater sensors are cleaned of biofouling agents on a weekly/twice-weekly interval, though some data drift can be observed in transmission, beam attenution, and fluorescence. Full maintenance Log available at: https://docs.google.com/a/mlml.calstate.edu/spreadsheet/ccc?key=0AnH2QAt-nlAldEFwY2ZyNUV6amJtLXllMDljdmM1SFE&pli=1#gid=0'
         
-        ds['ba'].attrs['long_name'] = 'Beam attenuation'
+        ds['ba'].attrs['long_name'] = 'beam attenuation'
         ds['ba'].attrs['standard_name'] = 'volume_beam_attenuation_coefficient_of_radiative_flux_in_sea_water'
         ds['ba'].attrs['units'] = 'm-1'
+        ds['ba'].attrs['ancillary_variables'] = 'ba_flg'
         ds['ba'].attrs['comment'] = 'sensor: C-Star Transmissometer (10cm)'
         
+        ds['ba_flg'].attrs['long_name'] = 'beam attenuation flag'
+        ds['ba_flg'].attrs['standard_name'] = 'status_flag'
+        ds['ba_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['ba_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['ba_flg'].attrs['comment'] =  'Sensor range test 0<ba<100, User range test 0<ba<50'
+        
+        ds['co2'].attrs['long_name'] = 'partial pressure of carbon dioxide'
         ds['co2'].attrs['standard_name'] = 'partial_pressure_of_carbon_dioxide_in_sea_water'
         ds['co2'].attrs['units'] = 'uatm'
-        ds['co2'].attrs['comment'] = 'sensor: Turner C-Sense'      
+        ds['co2'].attrs['ancillary_variables'] = 'co2_flg'
+        ds['co2'].attrs['comment'] = 'sensor: Turner C-Sense'     
         
+        ds['co2_flg'].attrs['long_name'] = 'partial pressure of carbon dioxide flag'
+        ds['co2_flg'].attrs['standard_name'] = 'status_flag'
+        ds['co2_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['co2_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'       
+        
+        ds['cond'].attrs['long_name'] = 'conductivity'
         ds['cond'].attrs['standard_name'] = 'sea_water_electrical_conductivity'
         ds['cond'].attrs['units'] = 'S m-1'
+        ds['cond'].attrs['ancillary_variables'] = 'cond_flg'
         ds['cond'].attrs['comment'] = 'sensor: Seabird SBE19 CTD'      
         
+        ds['cond_flg'].attrs['long_name'] = 'conductivity flag'
+        ds['cond_flg'].attrs['standard_name'] = 'status_flag'
+        ds['cond_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['cond_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['cond_flg'].attrs['comment'] =  'Sensor range test 0<cond<7, User range test 0.75<cond<1.1, Spike test mean(cond_1.42hours)+/-2.4*stdev'
+        
+        ds['do2'].attrs['long_name'] = 'dissolved oxygen'
         ds['do2'].attrs['standard_name'] = 'mole_concentration_of_dissolved_molecular_oxygen_in_sea_water'
         ds['do2'].attrs['units'] = 'umol L-1'
-        ds['do2'].attrs['comment'] = 'Sensor: AADI Oxygen Optode'      
+        ds['do2'].attrs['ancillary_variables'] = 'do2_flg'
+        ds['do2'].attrs['comment'] = 'Sensor: AADI Oxygen Optode'   
         
+        ds['do2_flg'].attrs['long_name'] = 'dissolved oxygen flag'
+        ds['do2_flg'].attrs['standard_name'] = 'status_flag'
+        ds['do2_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['do2_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['do2_flg'].attrs['comment'] =  'Sensor range test 0<do2<500, User range test 0<do2<400, Spike test mean(do2_1.42hours)+/-2.4*stdev'
+        
+        ds['fluor'].attrs['long_name'] = 'chlorophyll'
         ds['fluor'].attrs['standard_name'] = 'chlorophyll_concentration_in_sea_water'
         ds['fluor'].attrs['units'] = 'ug L-1'
+        ds['fluor'].attrs['ancillary_variables'] = 'fluor_flg'
         ds['fluor'].attrs['comment'] = 'Sensor: WetStar Fluorometer' 
         
+        ds['fluor_flg'].attrs['long_name'] = 'chlorophyll flag'
+        ds['fluor_flg'].attrs['standard_name'] = 'status_flag'
+        ds['fluor_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['fluor_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['fluor_flg'].attrs['comment'] =  'Sensor range test 0.03<fluor<75, User range test 0<fluor<20, Spike test mean(fluor_1.42hours)+/-2.4*stdev'
+        
+        ds['osat'].attrs['long_name'] = 'dissolved oxygen percent saturation'
         ds['osat'].attrs['standard_name'] = 'fractional_saturation_of_oxygen_in_sea_water'
+        ds['osat'].attrs['ancillary_variables'] = 'osat_flg'
         ds['osat'].attrs['units'] = 'percent'
         
+        ds['osat_flg'].attrs['long_name'] = 'dissolved oxygen percent saturation flag'
+        ds['osat_flg'].attrs['standard_name'] = 'status_flag'
+        ds['osat_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['osat_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['osat_flg'].attrs['comment'] =  'Sensor range test 0<osat<100, User range test 0<osat<100, Spike test mean(osat_1.42hours)+/-2.4*stdev'
+        
+        ds['otemp'].attrs['long_name'] = 'optode temperature'
         ds['otemp'].attrs['standard_name'] = 'sea_water_temperature'
         ds['otemp'].attrs['units'] = 'degree_C'
+        ds['osat'].attrs['ancillary_variables'] = 'otemp_flg'
         ds['otemp'].attrs['comment'] = 'Sensor: AADI Oxygen Optode'
         
+        ds['otemp_flg'].attrs['long_name'] = 'optode temperature flag'
+        ds['otemp_flg'].attrs['standard_name'] = 'status_flag'
+        ds['otemp_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['otemp_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['otemp_flg'].attrs['comment'] =  'Sensor range test -5<temp<35, User range test 4<temp<22, Spike test mean(temp_1.42hours)+/-2.4*stdev'
+        
+        ds['ph'].attrs['long_name'] = 'pH total scale'
         ds['ph'].attrs['standard_name'] = 'sea_water_ph_reported_on_total_scale'
         ds['ph'].attrs['units'] = '1'
+        ds['ph'].attrs['ancillary_variables'] = 'ph_flg'
         ds['ph'].attrs['comment'] = 'Sensor: Honeywell Durafet III'
+        
+        ds['ph_flg'].attrs['long_name'] = 'pH total scale flag'
+        ds['ph_flg'].attrs['standard_name'] = 'status_flag'
+        ds['ph_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['ph_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['ph_flg'].attrs['comment'] =  'Sensor range test 0<ph<14, User range test 7<ph<10, Spike test mean(ph_1.42hours)+/-2.4*stdev'
 
+        ds['sal'].attrs['long_name'] = 'practical salinity'    
         ds['sal'].attrs['standard_name'] = 'sea_water_practical_salinity'
         ds['sal'].attrs['units'] = '1'
+        ds['sal'].attrs['ancillary_variables'] = 'sal_flg'
         ds['sal'].attrs['comment'] = 'sensor: Seabird SBE19 CTD'
         
+        ds['sal_flg'].attrs['long_name'] = 'practical salinity flag'
+        ds['sal_flg'].attrs['standard_name'] = 'status_flag'
+        ds['sal_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['sal_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['sal_flg'].attrs['comment'] =  'Sensor range test 20<sal<50, User range test 32<sal<35, Spike test mean(sal_1.42hours)+/-2.4*stdev'
+        
+        ds['temp'].attrs['long_name'] = 'temperature'
         ds['temp'].attrs['standard_name'] = 'sea_water_temperature'
         ds['temp'].attrs['units'] = 'degree_C'
+        ds['temp'].attrs['ancillary_variables'] = 'temp_flg'
         ds['temp'].attrs['comment'] = 'sensor: Seabird SBE19 CTD'
         
-        ds['trans'].attrs['long_name'] = 'Beam transmission'
+        ds['temp_flg'].attrs['long_name'] = 'temperature flag'
+        ds['temp_flg'].attrs['standard_name'] = 'status_flag'
+        ds['temp_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['temp_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['temp_flg'].attrs['comment'] =  'Sensor range test -5<temp<35, User range test 4<temp<22, Spike test mean(temp_1.42hours)+/-2.4*stdev'
+        
+        ds['trans'].attrs['long_name'] = 'beam transmission'
         ds['trans'].attrs['units'] = 'percent'
+        ds['trans'].attrs['ancillary_variables'] = 'trans_flg'
         ds['trans'].attrs['comment'] = 'sensor: C-Star Transmissometer (10cm)'     
         
-        
-        
+        ds['trans_flg'].attrs['long_name'] = 'beam transmission flag'
+        ds['trans_flg'].attrs['standard_name'] = 'status_flag'
+        ds['trans_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
+        ds['trans_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['trans_flg'].attrs['comment'] =  'Sensor range test 0<trans<100, User range test 0<trans<100'        
+
     elif station is 'weather':
         ds.coords['lon'] = -121.78842
         ds.coords['lat'] = 36.80040
