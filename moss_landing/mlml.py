@@ -256,12 +256,24 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         ds.coords['lon'] = -121.7915
         ds.coords['lat'] = 36.8025
         
+        ds['lon'].attrs['standard_name'] = 'longitude'
+        ds['lon'].attrs['units'] = 'degrees_east'       
+        
+        ds['lat'].attrs['standard_name'] = 'latitude'
+        ds['lat'].attrs['units'] = 'degrees_north'    
+        
+        ds['time'].attrs['standard_name'] = 'time'
+        
+        ds.attrs['Conventions'] = 'CF-1.6'
         ds.attrs['title'] = 'Historical Seawater Data - Moss Landing Marine Labs'
         ds.attrs['institution'] = 'Moss Landing Marine Labs'
         ds.attrs['disclaimer'] = 'Moss Landing Marine Laboratories (MLML) provides these data "as is", with no warranty, expressed or implied, of the data quality or consistency. It is provided without support and without obligation on the part of MLML to assist in its use, correction, modification, or enhancement. For use in publication, authors should obtain written permission from the director of MLML, and acknowledge MLML as the data source in those publications.'
         ds.attrs['contacts'] = 'Data Manager: Jason Adelaars (jadelaars@mlml.calstate.edu), MLML Director: Jim Harvey (jharvey@mlml.calstate.edu)'
         ds.attrs['citation'] = 'Moss Landing Marine Labs. Historical Seawater Data (insert date range) [Internet]. [cited (insert date of download)]. Available from: pubdata.mlml.calstate.edu'
         ds.attrs['comment'] = 'Seawater data observations are collected from raw seawater drawn through an intake pipe. Prior to October 31, 2013, the intake opening was set at a depth of ~18.3 m (60ft) below mean lower low water (MLLW). Due to sediment build-up around the pipe, the intake opening was raised to ~16.6m (54.4ft) below MLLW on October 31, 2013. The intake opening is located at 36.8025N and 121.7915W\\r\\nThe seawater sensors are cleaned of biofouling agents on a weekly/twice-weekly interval, though some data drift can be observed in transmission, beam attenution, and fluorescence. Full maintenance Log available at: https://docs.google.com/a/mlml.calstate.edu/spreadsheet/ccc?key=0AnH2QAt-nlAldEFwY2ZyNUV6amJtLXllMDljdmM1SFE&pli=1#gid=0'
+        
+        flag_values = [1., 2., 3., 4., 9.]
+        flag_meanings = 'pass not_evaluated suspect_or_of_high_interest fail missing_data'
         
         ds['ba'].attrs['long_name'] = 'beam attenuation'
         ds['ba'].attrs['standard_name'] = 'volume_beam_attenuation_coefficient_of_radiative_flux_in_sea_water'
@@ -271,8 +283,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['ba_flg'].attrs['long_name'] = 'beam attenuation flag'
         ds['ba_flg'].attrs['standard_name'] = 'status_flag'
-        ds['ba_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['ba_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['ba_flg'].attrs['flag_values'] = flag_values
+        ds['ba_flg'].attrs['flag_meanings'] = flag_meanings
         ds['ba_flg'].attrs['comment'] =  'Sensor range test 0<ba<100, User range test 0<ba<50'
         
         ds['co2'].attrs['long_name'] = 'partial pressure of carbon dioxide'
@@ -283,8 +295,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['co2_flg'].attrs['long_name'] = 'partial pressure of carbon dioxide flag'
         ds['co2_flg'].attrs['standard_name'] = 'status_flag'
-        ds['co2_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['co2_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'       
+        ds['co2_flg'].attrs['flag_values'] = flag_values
+        ds['co2_flg'].attrs['flag_meanings'] = flag_meanings      
         
         ds['cond'].attrs['long_name'] = 'conductivity'
         ds['cond'].attrs['standard_name'] = 'sea_water_electrical_conductivity'
@@ -294,8 +306,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['cond_flg'].attrs['long_name'] = 'conductivity flag'
         ds['cond_flg'].attrs['standard_name'] = 'status_flag'
-        ds['cond_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['cond_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['cond_flg'].attrs['flag_values'] = flag_values
+        ds['cond_flg'].attrs['flag_meanings'] = flag_meanings
         ds['cond_flg'].attrs['comment'] =  'Sensor range test 0<cond<7, User range test 0.75<cond<1.1, Spike test mean(cond_1.42hours)+/-2.4*stdev'
         
         ds['do2'].attrs['long_name'] = 'dissolved oxygen'
@@ -306,8 +318,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['do2_flg'].attrs['long_name'] = 'dissolved oxygen flag'
         ds['do2_flg'].attrs['standard_name'] = 'status_flag'
-        ds['do2_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['do2_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['do2_flg'].attrs['flag_values'] = flag_values
+        ds['do2_flg'].attrs['flag_meanings'] = flag_meanings
         ds['do2_flg'].attrs['comment'] =  'Sensor range test 0<do2<500, User range test 0<do2<400, Spike test mean(do2_1.42hours)+/-2.4*stdev'
         
         ds['fluor'].attrs['long_name'] = 'chlorophyll'
@@ -318,8 +330,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['fluor_flg'].attrs['long_name'] = 'chlorophyll flag'
         ds['fluor_flg'].attrs['standard_name'] = 'status_flag'
-        ds['fluor_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['fluor_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['fluor_flg'].attrs['flag_values'] = flag_values
+        ds['fluor_flg'].attrs['flag_meanings'] = flag_meanings
         ds['fluor_flg'].attrs['comment'] =  'Sensor range test 0.03<fluor<75, User range test 0<fluor<20, Spike test mean(fluor_1.42hours)+/-2.4*stdev'
         
         ds['osat'].attrs['long_name'] = 'dissolved oxygen percent saturation'
@@ -329,8 +341,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['osat_flg'].attrs['long_name'] = 'dissolved oxygen percent saturation flag'
         ds['osat_flg'].attrs['standard_name'] = 'status_flag'
-        ds['osat_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['osat_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['osat_flg'].attrs['flag_values'] = flag_values
+        ds['osat_flg'].attrs['flag_meanings'] = flag_meanings
         ds['osat_flg'].attrs['comment'] =  'Sensor range test 0<osat<100, User range test 0<osat<100, Spike test mean(osat_1.42hours)+/-2.4*stdev'
         
         ds['otemp'].attrs['long_name'] = 'optode temperature'
@@ -341,8 +353,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['otemp_flg'].attrs['long_name'] = 'optode temperature flag'
         ds['otemp_flg'].attrs['standard_name'] = 'status_flag'
-        ds['otemp_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['otemp_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['otemp_flg'].attrs['flag_values'] = flag_values
+        ds['otemp_flg'].attrs['flag_meanings'] = flag_meanings
         ds['otemp_flg'].attrs['comment'] =  'Sensor range test -5<temp<35, User range test 4<temp<22, Spike test mean(temp_1.42hours)+/-2.4*stdev'
         
         ds['ph'].attrs['long_name'] = 'pH total scale'
@@ -353,8 +365,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['ph_flg'].attrs['long_name'] = 'pH total scale flag'
         ds['ph_flg'].attrs['standard_name'] = 'status_flag'
-        ds['ph_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['ph_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['ph_flg'].attrs['flag_values'] = flag_values
+        ds['ph_flg'].attrs['flag_meanings'] = flag_meanings
         ds['ph_flg'].attrs['comment'] =  'Sensor range test 0<ph<14, User range test 7<ph<10, Spike test mean(ph_1.42hours)+/-2.4*stdev'
 
         ds['sal'].attrs['long_name'] = 'practical salinity'    
@@ -365,8 +377,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['sal_flg'].attrs['long_name'] = 'practical salinity flag'
         ds['sal_flg'].attrs['standard_name'] = 'status_flag'
-        ds['sal_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['sal_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['sal_flg'].attrs['flag_values'] = flag_values
+        ds['sal_flg'].attrs['flag_meanings'] = flag_meanings
         ds['sal_flg'].attrs['comment'] =  'Sensor range test 20<sal<50, User range test 32<sal<35, Spike test mean(sal_1.42hours)+/-2.4*stdev'
         
         ds['temp'].attrs['long_name'] = 'temperature'
@@ -377,8 +389,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['temp_flg'].attrs['long_name'] = 'temperature flag'
         ds['temp_flg'].attrs['standard_name'] = 'status_flag'
-        ds['temp_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['temp_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['temp_flg'].attrs['flag_values'] = flag_values
+        ds['temp_flg'].attrs['flag_meanings'] = flag_meanings
         ds['temp_flg'].attrs['comment'] =  'Sensor range test -5<temp<35, User range test 4<temp<22, Spike test mean(temp_1.42hours)+/-2.4*stdev'
         
         ds['trans'].attrs['long_name'] = 'beam transmission'
@@ -388,8 +400,8 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         
         ds['trans_flg'].attrs['long_name'] = 'beam transmission flag'
         ds['trans_flg'].attrs['standard_name'] = 'status_flag'
-        ds['trans_flg'].attrs['flag_values'] = '1, 2, 3, 4, 9'
-        ds['trans_flg'].attrs['flag_meanings'] = 'pass, not_evaluated, suspect_or_of_high_interest, fail, missing_data'
+        ds['trans_flg'].attrs['flag_values'] = flag_values
+        ds['trans_flg'].attrs['flag_meanings'] = flag_meanings
         ds['trans_flg'].attrs['comment'] =  'Sensor range test 0<trans<100, User range test 0<trans<100'        
 
     elif station is 'weather':
@@ -428,6 +440,13 @@ def cleanup_raw(ds):
         ds = ds.drop('tide')
     if 'tide_flg' in ds.keys():
         ds = ds.drop('tide_flg')
+    # Remove extra time variables
+    if 'utc_time' in ds.keys():
+        ds = ds.drop('utc_time')
+    if 'pst_time' in ds.keys():
+        ds = ds.drop('pst_time')
+    if 'unix_time' in ds.keys():
+        ds = ds.drop('unix_time')
         
     ds.attrs['history'] = ds.attrs['history'] + 'raw data variables dropped using mlml.cleanup_raw: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
     
