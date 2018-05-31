@@ -13,18 +13,19 @@ data_dir = mlml_data_path.seawater()
 
 import os
 
-# top-level data directory
+# top-level data directory (default: ~/work/Data/MLML_shore_stations/)
 def mlml_data():
-    datadir = '~/work/Data/MLML/'
+    homedir = os.path.expanduser('~')
+    datadir = os.path.join(homedir,'work/Data/MLML_shore_stations/')
     return datadir
     
-# csv files
-def seawater():
-    datadir = os.path.join(mlml_data(),'seawater/')
+# csv files 
+def moss_landing():
+    datadir = os.path.join(mlml_data(),'csv/moss_landing/')
     return datadir
 
-def weather():
-    datadir = os.path.join(mlml_data(),'weather/')
+def moss_landing_weather():
+    datadir = os.path.join(mlml_data(),'csv/moss_landing_weather/')
     return datadir
 
 # NetCDF files (created from csv files in get_mlml_data.py)
