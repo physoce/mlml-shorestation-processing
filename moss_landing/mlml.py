@@ -263,6 +263,7 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         ds['lat'].attrs['units'] = 'degrees_north'    
         
         ds['time'].attrs['standard_name'] = 'time'
+        ds['time'].attrs['long_name'] = 'UTC time'
         
         ds.attrs['Conventions'] = 'CF-1.6'
         ds.attrs['title'] = 'Historical Seawater Data - Moss Landing Marine Labs'

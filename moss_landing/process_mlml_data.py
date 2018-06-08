@@ -33,5 +33,3 @@ if run_makencfile:
         os.mkdir(sw_nc_dir)
 
     mlml.make_netcdf(sw_csv_dir,sw_nc_dir,nc_prefix,'seawater',download=False)
-
-        
