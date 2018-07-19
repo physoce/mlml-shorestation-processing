@@ -1,5 +1,7 @@
 # MLML shore station processing
 
+[![DOI](https://zenodo.org/badge/134993576.svg)](https://zenodo.org/badge/latestdoi/134993576)
+
 Tom Connolly and Jason Adelaars, Moss Landing Marine Labs
 
 Contact: tconnolly@mlml.calstate.edu
