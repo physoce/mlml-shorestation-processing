@@ -137,7 +137,7 @@ Options:
 Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names taken from column headers
     '''
     
-    file_list = glob(data_dir+'*.csv')
+    file_list = sorted(glob(data_dir+'*.csv'))
 
     for fi,file_name in enumerate(file_list):
         print('reading ' + file_name)  
@@ -403,7 +403,23 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         ds['trans_flg'].attrs['standard_name'] = 'status_flag'
         ds['trans_flg'].attrs['flag_values'] = flag_values
         ds['trans_flg'].attrs['flag_meanings'] = flag_meanings
-        ds['trans_flg'].attrs['comment'] =  'Sensor range test 0<trans<100, User range test 0<trans<100'        
+        ds['trans_flg'].attrs['comment'] =  'Sensor range test 0<trans<100, User range test 0<trans<100'  
+        
+        ds['nitrate'].attrs['long_name'] = 'nitrate'
+        ds['nitrate'].attrs['standard_name'] = 'mole_concentration_of_nitrate_in_sea_water'
+        ds['nitrate'].attrs['units'] = 'umol L^-1'
+        ds['nitrate'].attrs['ancillary_variables'] = 'nitrate_flg'
+        ds['nitrate'].attrs['comment'] = 'sensor: SUNA v2'     
+        
+        ds['nitrate_flg'].attrs['long_name'] = 'nitrate concentration flag'
+        ds['nitrate_flg'].attrs['standard_name'] = 'status_flag'
+        ds['nitrate_flg'].attrs['flag_values'] = flag_values
+        ds['nitrate_flg'].attrs['flag_meanings'] = flag_meanings  
+        
+        ds['nitrogen'].attrs['long_name'] = 'nitrate as nitrogen'
+        ds['nitrogen'].attrs['units'] = 'mg L^-1 as N'
+        ds['nitrogen'].attrs['ancillary_variables'] = 'nitrate_flg'
+        ds['nitrogen'].attrs['comment'] = 'sensor: SUNA v2'    
 
     elif station is 'weather':
         ds.coords['lon'] = -121.78842
