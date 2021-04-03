@@ -473,20 +473,12 @@ def add_flags(ds):
     '''
     Flag questionable data based on users' subjective examination and automated criteria beyond initial QARTOD.
     '''
-    
-    # pH
-    ph_ques_dates = [['2017-07-17 21:00','2017-07-19 19:30'],
-                     ['2017-03-17 17:00','2017-05-17 19:30']]
-
-    for drange in ph_ques_dates:
-        ii, = np.where((ds['time']>=np.datetime64(drange[0]))
-                       & (ds['time']<=np.datetime64(drange[1])))
-        ds['ph_flg'][ii] = 3.
 
     # All variables
     var_list = ['ba','cond','do2','fluor','osat','otemp','ph','sal','temp','trans','co2']
     
-    all_ques_dates = [['2017-05-03 18:13','2017-05-03 22:00'],
+    all_ques_dates = [['2012-04-09 15:20','2012-04-11 19:20'],
+                      ['2017-05-03 18:13','2017-05-03 22:00'],
                       ['2017-06-07 19:00','2017-06-07 22:00'],
                       ['2017-07-03 06:20','2017-07-03 06:30'],
                       ['2017-07-18 18:00','2017-07-18 21:00']
@@ -496,6 +488,15 @@ def add_flags(ds):
                        & (ds['time']<=np.datetime64(drange[1])))
         for var in var_list:
             ds[var+'_flg'][ii] = 3.
+            
+    # pH
+    ph_ques_dates = [['2017-07-17 21:00','2017-07-19 19:30'],
+                     ['2017-03-17 17:00','2017-05-17 19:30']]
+
+    for drange in ph_ques_dates:
+        ii, = np.where((ds['time']>=np.datetime64(drange[0]))
+                       & (ds['time']<=np.datetime64(drange[1])))
+        ds['ph_flg'][ii] = 3.
 
     # CO2
     co2_ques_dates = [['2015-01-01 00:00','2017-03-08 00:00'], # range set to 1000 ppm on first deployment (too low)
@@ -508,6 +509,14 @@ def add_flags(ds):
         ii, = np.where((ds['time']>=np.datetime64(drange[0]))
                        & (ds['time']<=np.datetime64(drange[1])))
         ds['co2_flg'][ii] = 3.
+        
+    # salinity
+    sal_ques_dates = [['2014-02-11 08:00','2014-03-27 18:00']]
+    
+    for drange in sal_ques_dates:
+        ii, = np.where((ds['time']>=np.datetime64(drange[0]))
+                       & (ds['time']<=np.datetime64(drange[1])))
+        ds['sal_flg'][ii] = 3.
         
     # salinity spikes    
     ii, = np.where(np.abs(np.diff(ds['sal'])) > 0.2)
