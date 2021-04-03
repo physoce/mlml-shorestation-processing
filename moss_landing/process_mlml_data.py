@@ -24,9 +24,9 @@ weather_nc_dir = os.path.join(weather_dir,'netcdf/')
 weather_nc_prefix = 'moss_landing_weather_'
 
 run_download = False
-run_makencfile = False
-run_download_weather = True
-run_makencfile_weather = True
+run_makencfile = True
+run_download_weather = False
+run_makencfile_weather = False
 
 if run_download:
 

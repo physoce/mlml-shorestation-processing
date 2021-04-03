@@ -477,15 +477,38 @@ def add_flags(ds):
     # All variables
     var_list = ['ba','cond','do2','fluor','osat','otemp','ph','sal','temp','trans','co2']
     
-    all_ques_dates = [['2012-04-09 15:20','2012-04-11 19:20'],
+    all_ques_dates = [['2012-01-09 13:48 PST','2012-01-09 14:44 PST'], # Flow problems. Stopped program for major cleaning.
+                      ['2012-02-06 09:30 PST','2012-02-06 15:00 PST'], # Changed CTD out on the SCI Seawater System. Exchanged 2738 for 2216. Reset calibration coefficients in Seawater Socket Python module. Cleaned oxygen optode and filters.
+                      ['2012-04-09 15:20','2012-04-11 19:20'],
+                      ['2012-06-16 15:17 PST','2012-06-18 10:59 PST'], # system down
+                      ['2012-06-25 14:02 PST','2012-06-26 08:10 PST'], # system down
+                      ['2012-06-27 14:22 PST','2012-06-28 08:56 PST'], # system down
+                      ['2012-06-28 14:07 PST','2012-06-29 08:16 PST'], # system down
+                      ['2012-06-29 14:32 PST','2012-06-30 10:36 PST'], # system down
+                      ['2012-06-30 13:22 PST','2012-07-02 11:13 PST'], # system down
+                      ['2012-07-02 19:05 PST','2012-07-03 09:18 PST'], # system down
+                      ['2012-07-03 15:05 PST','2012-07-05 09:18 PST'], # system down
+                      ['2012-07-05 14:00 PST','2012-07-05 15:39 PST'], # system down
+
                       ['2017-05-03 18:13','2017-05-03 22:00'],
                       ['2017-06-07 19:00','2017-06-07 22:00'],
                       ['2017-07-03 06:20','2017-07-03 06:30'],
-                      ['2017-07-18 18:00','2017-07-18 21:00']
+                      ['2017-07-18 18:00','2017-07-18 21:00'],
+                      ['2019-05-14 19:20','2019-05-14 20:10']  # CTD swap
                      ]
-    for drange in all_ques_dates:
-        ii, = np.where((ds['time']>=np.datetime64(drange[0]))
-                       & (ds['time']<=np.datetime64(drange[1])))
+
+    for drange in all_ques_dates:    
+        tstamp = ['','']
+        for di in range(2):
+            if drange[di][-3:] == 'PST':
+
+                tstamp[di] = pd.to_datetime(drange[di][:-3]).tz_localize(tz='US/Pacific').to_datetime64()
+            else:
+                tstamp[di] = pd.to_datetime(drange[di],utc=True).to_datetime64()
+
+
+        ii, = np.where((ds['time'] >= tstamp[0])
+                       & (ds['time'] <= tstamp[1]))
         for var in var_list:
             ds[var+'_flg'][ii] = 3.
             
@@ -528,11 +551,24 @@ def add_flags(ds):
     ii = ii + 1
     ds['sal_flg'][ii] = 3.
     
+    # # high salinity values 
+    ii, = np.where((ds['sal'] > 40) & (ds['sal_flg'] == 1))
+    ii = ii
+    ds['sal_flg'][ii] = 3.
+    
+    # dissolved oxygen
+    do_ques_dates = [['2010-09-03 16:00','2010-10-08 18:30']]
+
+    for drange in do_ques_dates:
+        ii, = np.where((ds['time']>=np.datetime64(drange[0]))
+                       & (ds['time']<=np.datetime64(drange[1])))
+        ds['do2_flg'][ii] = 3.    
+    
     # oxygen spikes
     ii, = np.where(np.abs(np.diff(ds['do2'])) > 100)
     ii = ii
     ds['do2_flg'][ii] = 3.
-    
+
     # isolated oxygen points(or pairs of points)
     ii, = np.where(np.isnan(ds['do2'][1:-1]+ds['do2'][2:]) & np.isnan(ds['do2'][1:-1]+ds['do2'][:-2]))
     ii = ii + 1
@@ -540,6 +576,42 @@ def add_flags(ds):
     ii, = np.where(np.isnan(ds['do2'][1:-1]+ds['do2'][2:]) & np.isnan(ds['do2'][1:-1]+ds['do2'][:-2]))
     ii = ii + 1
     ds['do2_flg'][ii] = 3.
+    
+    # maintenance log 
+    
+    maint_log_file = 'maintenance_log/Seawater Maintenance Log - Sheet1.csv'
+    mlog = pd.read_csv(maint_log_file)
+    
+    # find when there are ranges of times in the maintenance log - indicates down time
+    trangei = mlog['Time (PST)'].str.contains('-') == True
+
+    times = mlog['Time (PST)'][trangei].str.split('-',expand = True)
+    t1 = times[0]
+    t2 = times[1]
+
+    # special cases
+    t1[t1.str.len() == 3] = '0' + t1[t1.str.len() == 3]
+
+    dates = mlog['Date (yyyymmdd)'][trangei].str.split('-',expand = True)
+    d1 = dates[0]
+    d2 = dates[1]
+
+    # special cases
+    d1[d1.str.contains('10130816')] = '20130816'
+
+    d2[d2.isnull()] = d1[d2.isnull()]
+    dtime1 = pd.to_datetime(d1+' '+t1)
+    dtime2 = pd.to_datetime(d2+' '+t2)
+
+    # add time before and after
+    dtime1 = dtime1 - pd.Timedelta(30,'m')
+    dtime2 = dtime2 + pd.Timedelta(30,'m')
+
+    for drange in zip(list(dtime1),list(dtime2)):
+        ii, = np.where((ds['time']>=np.datetime64(drange[0]))
+                   & (ds['time']<=np.datetime64(drange[1])))
+        for var in var_list:
+            ds[var+'_flg'][ii] = 3.
     
     ds.attrs['history'] = ds.attrs['history'] + 'Flags added using mlml.add_flags: ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ', ' 
     
