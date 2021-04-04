@@ -1,1 +1,2 @@
-# date range of values to flag, created using manual_flag() on 2021-04-03-1747432010-12-29T20:01:37.000000000,2010-12-30T13:01:37.000000000
+# date range of values to flag, created using manual_flag() on 2021-04-03-174743
+2010-12-29T20:01:37.000000000,2010-12-30T13:01:37.000000000
