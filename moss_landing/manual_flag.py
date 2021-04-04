@@ -1,33 +1,62 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.widgets import Cursor
+from matplotlib.dates import date2num
 import pandas as pd
 import xarray as xr
 import sys
 import os
 
+#def apply_manual_flags(ds):
+
+
 def manual_flag(ds):
     '''
-Specify time ranges to flag as suspect with a GUI.
+Specify time ranges to flag or unflag with a GUI.
 
-The suspect date ranges will be stored in a text file in manual_flag_output/
+The date ranges are stored in a text file in manual_flag_output/
+The file name includes:
+- the variable
+- flag mode (flag or unflag)
+- the date and time on which the file was created
     '''
 
     var_list = list(ds.variables)
     print(var_list)
 
-    var = 'do2'
+    var_plt = 'do2'
     var_in = input('Choose a variable to plot (default: do2):')
+    if var_in != '':
+        var_plt = var_in
+        if var_plt not in var_list:
+            raise('variable not understood')
+
+    var = var_plt
+    var_in = input('Choose a variable to apply the flags to, or type "all" (default: plot variable):')
     if var_in != '':
         var = var_in
 
+    flag_mode = 'flag'
+    fl_in = input('Flag mode: Choose whether to flag or unflag (default: flag, type "u" to unflag):')
+    if fl_in != '':
+        if fl_in == "u":
+            flag_mode = 'unflag'
+        else:
+            raise('flag mode not understood')
+
     good = ds[var+'_flg'] == 1
 
+    #dnum = date2num(np.array(ds['time']))
     unix_time = (np.array(ds['time'])-np.datetime64('1970-01-01'))/np.timedelta64(1,'s')
 
     fig = plt.figure(figsize=(11, 7))
     ax = fig.add_subplot(1, 1, 1)
-    ax.plot(unix_time[good],ds[var][good])
+    if flag_mode == 'unflag':
+        ax.plot(unix_time,ds[var],'k-',lw=0.5)
+    ax.plot(unix_time[good],ds[var][good],'c-',lw=0.5)
+    ax.plot(unix_time[good],ds[var][good],'bo',ms=1)
+    xl = plt.xlim()
+    yl = plt.ylim()
 
     now = pd.Timestamp.now()
     datetime_str = (str(now.year)+'-'+
@@ -39,11 +68,12 @@ The suspect date ranges will be stored in a text file in manual_flag_output/
     print(datetime_str)
 
     out_dir = 'manual_flag_output/'
-    out_file = var + '_flag_' + datetime_str + '.txt'
+    out_file = var + '_' + flag_mode + '_' + datetime_str + '.txt'
     out_path = os.path.join(out_dir,out_file)
 
     f = open(out_path,'w')
-    f.write('# date range of questionable values, created using manual_flag() on '+datetime_str)
+    f.write('# date range of values to ' + flag_mode +
+            ', created using manual_flag() on ' + datetime_str)
     f.close()
 
     done_flagging = False
@@ -51,6 +81,9 @@ The suspect date ranges will be stored in a text file in manual_flag_output/
     while not done_flagging:
         cursor = Cursor(ax, useblit=True, color='k', linewidth=1)
         zoom_ok = False
+
+        plt.xlim(xl)
+        plt.ylim(yl)
 
         print('\nZoom or pan to view, \npress spacebar when ready to click:\n')
 
@@ -64,21 +97,34 @@ The suspect date ranges will be stored in a text file in manual_flag_output/
         ti1 = np.argmin(np.abs(unix_time - val[0][0]))
         ti2 = np.argmin(np.abs(unix_time - val[1][0]))
 
-        t1 = ds['time'][ti1]
-        t2 = ds['time'][ti2]
+        t1 = ds['time'][ti1].values
+        t2 = ds['time'][ti2].values
 
         f = open(out_path,'a')
         f.write(str(t1)+','+str(t2))
         f.close()
 
-        response = input('Press 1 if done flagging, any other key to continue')
+        if flag_mode == 'flag':
+            ii, = np.where((ds['time'][good] >= t1) & (ds['time'][good] <= t2))
+            ax.plot(unix_time[good][ii],ds[var][good][ii],'r.')
+        if flag_mode == 'unflag':
+            ii, = np.where((ds['time'] >= t1) & (ds['time'] <= t2))
+            ax.plot(unix_time[ii],ds[var][ii],'r.')
+
+        xl = plt.xlim()
+        yl = plt.ylim()
+
+        response = input('Press 1 if done flagging, 2 to abort, return to continue')
 
         if len(response) > 0:
             if response[-1] == '1':
                 done_flagging = True
                 break
-
-
+            if response[-1] == '2':
+                done_flagging = True
+                os.remove(out_path)
+                print(out_file+' deleted from '+out_path)
+                break
 
 if __name__ == '__main__':
     sys.path.append('..')
