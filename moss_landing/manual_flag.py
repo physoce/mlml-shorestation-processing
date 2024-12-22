@@ -182,4 +182,3 @@ if __name__ == '__main__':
     ds.load()
 
     manual_flag(ds)
-    #load_manual_flags(ds)

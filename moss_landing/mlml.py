@@ -56,7 +56,8 @@ overwrite   - boolean specifying whether to overwrite the existing files, only u
 
     # Additional processing
     d = cleanup_raw(d)
-    d = add_flags(d)
+    if station == 'seawater':
+        d = add_flags(d)
 
     d.attrs['history'] = d.attrs['history'] + 'netcdf file created using mlml.make_netcdf(station_dir'+station_dir+',netcdf_dir='+netcdf_dir+',netcdf_prefix='+netcdf_prefix+',station='+station+'download='+str(download)+',overwrite='+str(overwrite)+'): ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ')'
 
@@ -64,7 +65,7 @@ overwrite   - boolean specifying whether to overwrite the existing files, only u
     prefix = os.path.join(netcdf_dir,netcdf_prefix)
     years, datasets = zip(*d.groupby('time.year'))
     paths = [prefix+'%s.nc' % y for y in years]
-    xr.save_mfdataset(datasets, paths)
+    xr.save_mfdataset(datasets, paths, mode='w')
 
 def download_station_data(station_dir,station='seawater',overwrite=True):
     '''
@@ -157,9 +158,14 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
                 d[var] = []
 
         # specify which columns contain numeric data
-        floatcols = range(2,len(varnames))
-        allcols = range(0,len(varnames))
-        strcols = list(set(allcols)-set(floatcols))
+        if varnames[0] == '': # extra first column in some files
+            floatcols = range(3,len(varnames))
+            allcols = range(1,len(varnames))
+            strcols = list(set(allcols)-set(floatcols))
+        else:
+            floatcols = range(2,len(varnames))
+            allcols = range(0,len(varnames))
+            strcols = list(set(allcols)-set(floatcols))
 
         # get numeric data, with missing values as NaN
         try:
@@ -193,6 +199,7 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
                         d[key] = np.append(d[key],np.nan*np.zeros(np.shape(data[:,2]))) # append NaN's
 
         except:
+            print('could not read '+file_name)
             pass
 
     # create date variables
@@ -216,11 +223,11 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
             format = 'dict'
             print("Warning: pandas not installed, loading MLML data in dictionary format instead")
 
-    if format is 'dataframe':
+    if format == 'dataframe':
         # turn dictionary into pandas dataframe
         d = pd.DataFrame(d,index=dtime)
         d.index.name = 'time'
-    elif format is 'dataset':
+    elif format == 'dataset':
         # turn dictionary in xarray dataset, using dataframe as intermediate format
         d = pd.DataFrame(d,index=dtime)
         d.index.name = 'time'
@@ -253,7 +260,7 @@ def add_metadata(ds,station,readme_file):
 Add metadata to xarray dataset. Currently this adds lat and lon coordinates and puts the contents of the readme in an attribute. For the weather data, the anemometer height is also added as a coordinate.
     """
 
-    if station is 'seawater':
+    if station == 'seawater':
         ds.coords['lon'] = -121.7915
         ds.coords['lat'] = 36.8025
 
@@ -269,8 +276,7 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         ds.attrs['Conventions'] = 'CF-1.6'
         ds.attrs['title'] = 'Historical Seawater Data - Moss Landing Marine Labs'
         ds.attrs['institution'] = 'Moss Landing Marine Labs'
-        ds.attrs['disclaimer'] = 'Moss Landing Marine Laboratories (MLML) provides these data "as is", with no warranty, expressed or implied, of the data quality or consistency. It is provided without support and without obligation on the part of MLML to assist in its use, correction, modification, or enhancement. For use in publication, authors should obtain written permission from the director of MLML, and acknowledge MLML as the data source in those publications.'
-        ds.attrs['contacts'] = 'Data Manager: Jason Adelaars (jadelaars@mlml.calstate.edu), MLML Director: Jim Harvey (jharvey@mlml.calstate.edu)'
+        ds.attrs['disclaimer'] = 'Moss Landing Marine Laboratories (MLML) provides these data "as is", with no warranty, expressed or implied, of the data quality or consistency. It is provided without support and without obligation on the part of MLML to assist in its use, correction, modification, or enhancement. For use in publication, authors should acknowledge MLML as the data source in those publications.'
         ds.attrs['citation'] = 'Moss Landing Marine Labs. Historical Seawater Data (insert date range) [Internet]. [cited (insert date of download)]. Available from: pubdata.mlml.calstate.edu'
         ds.attrs['comment'] = 'Seawater data observations are collected from raw seawater drawn through an intake pipe. Prior to October 31, 2013, the intake opening was set at a depth of ~18.3 m (60ft) below mean lower low water (MLLW). Due to sediment build-up around the pipe, the intake opening was raised to ~16.6m (54.4ft) below MLLW on October 31, 2013. The intake opening is located at 36.8025N and 121.7915W\\r\\nThe seawater sensors are cleaned of biofouling agents on a weekly/twice-weekly interval, though some data drift can be observed in transmission, beam attenution, and fluorescence. Full maintenance Log available at: https://docs.google.com/a/mlml.calstate.edu/spreadsheet/ccc?key=0AnH2QAt-nlAldEFwY2ZyNUV6amJtLXllMDljdmM1SFE&pli=1#gid=0'
 
@@ -422,7 +428,14 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         ds['nitrogen'].attrs['ancillary_variables'] = 'nitrate_flg'
         ds['nitrogen'].attrs['comment'] = 'sensor: SUNA v2'
 
-    elif station is 'weather':
+        ds['tide_flg'].attrs['long_name'] = 'tiden flag'
+        ds['tide_flg'].attrs['standard_name'] = 'status_flag'
+        ds['tide_flg'].attrs['flag_values'] = flag_values
+        ds['tide_flg'].attrs['flag_meanings'] = flag_meanings
+
+        ds['tide'].attrs['long_name'] = 'tide height at NOAA Monterey tide gauge'
+
+    elif station == 'weather':
         ds.coords['lon'] = -121.78842
         ds.coords['lat'] = 36.80040
         ds.coords['z'] = 3.3
@@ -453,11 +466,11 @@ def cleanup_raw(ds):
             ds = ds.drop(varname)
     if 'phrawv' in ds.keys():
         ds = ds.drop('phrawv')
-    # Remove tide variables
-    if 'tide' in ds.keys():
-        ds = ds.drop('tide')
-    if 'tide_flg' in ds.keys():
-        ds = ds.drop('tide_flg')
+    # # Remove tide variables
+    # if 'tide' in ds.keys():
+    #     ds = ds.drop('tide')
+    # if 'tide_flg' in ds.keys():
+    #     ds = ds.drop('tide_flg')
     # Remove extra time variables
     if 'utc_time' in ds.keys():
         ds = ds.drop('utc_time')
