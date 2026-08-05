@@ -18,10 +18,7 @@ import numpy as np
 from glob import glob
 from datetime import datetime, timedelta
 from manual_flag import load_manual_flags
-try:
-    import pandas as pd
-except ImportError:
-    pass
+import pandas as pd
 try:
     import xarray as xr
 except ImportError:
@@ -165,19 +162,25 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
 
         # get numeric data, with missing values as NaN
         try:
-            datamasked = np.genfromtxt(file_name,
-                                 skip_header=1,
-                                 delimiter=',',
-                                 missing_values='-99999',
-                                 usemask=True)
-            data = datamasked.filled(np.nan)
+            datatmp = pd.read_csv(file_name,
+                        na_values=-99999).values
+            # filter lines where newline character in suna string puts garbage on following row
+            badi, = np.where(datatmp[:, 0] == '"') 
+            data = pd.read_csv(file_name,
+                        na_values=-99999,
+                        skiprows=badi).values
 
             # get string data
-            datastr = np.genfromtxt(file_name,
-                             skip_header=1,
-                             delimiter=',',
-                             usecols=tuple(strcols),
-                             dtype=str)
+            datastrtmp = np.genfromtxt(file_name,
+                                skip_header=1,
+                                delimiter=',',
+                                usecols=tuple(strcols),
+                                dtype=str)
+            badi2, = np.where(datastrtmp[:, 0] == '"') 
+            datastr = pd.read_csv(file_name,
+                        na_values=-99999,
+                        usecols=tuple(strcols),
+                        skiprows=badi).values
 
             # append data variables
             if data.size != 0:
@@ -455,6 +458,7 @@ def cleanup_raw(ds):
     for varname, values in ds.data_vars.items():
         # If flag is NaN, data is missing
         if '_flg' in varname:
+            print(varname)
             ii, = np.where(np.isnan(values))
             ds[varname][ii] = 9.
         # Remove "raw" variables
