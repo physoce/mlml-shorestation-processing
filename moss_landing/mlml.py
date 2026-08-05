@@ -99,11 +99,9 @@ overwrite   - boolean specifying whether to overwrite the existing files
     csv_list = re.findall(file_pattern,html_string)
 
     # get updated readme file
-    urlr = urlopen(station_url + '1_README.TXT')
-    fr = open(station_dir + '1_README.TXT','w')
-    fr.write(str(urlr.read()))
-    fr.close()
-    urlr.close()
+    with urlopen(station_url + '1_README.txt') as urlr:
+        with open(station_dir + '1_README.txt','w') as fr:
+            fr.write(str(urlr.read()))
 
     # loop through each remote csv file and download if:
     # the file does not exist, the overwrite option is True or it is the last
@@ -116,12 +114,10 @@ overwrite   - boolean specifying whether to overwrite the existing files
                             overwrite == True,
                             csv_name == csv_list[-1]]
         if any(write_conditions):
-            urlfile = urlopen(remote_file)
-            f = open(local_file,'w')
-            filebytes = urlfile.read()
-            f.write(filebytes.decode('utf8'))
-            f.close()
-            urlfile.close()
+            with urlopen(remote_file) as urlfile:
+                with open(local_file,'w') as f: 
+                    filebytes = urlfile.read()
+                    f.write(filebytes.decode('utf8'))
 
 def read_csv_data(data_dir,format='dict'):
     '''
@@ -614,8 +610,8 @@ def add_flags(ds):
     d1[d1.str.contains('10130816')] = '20130816'
 
     d2[d2.isnull()] = d1[d2.isnull()]
-    dtime1 = pd.to_datetime(d1+' '+t1)
-    dtime2 = pd.to_datetime(d2+' '+t2)
+    dtime1 = pd.to_datetime(d1+' '+t1, format='mixed')
+    dtime2 = pd.to_datetime(d2+' '+t2, format='mixed')
 
     # add time before and after
     dtime1 = dtime1 - pd.Timedelta(30,'m')
