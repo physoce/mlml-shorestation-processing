@@ -456,10 +456,14 @@ def cleanup_raw(ds):
 
     # Loop through variables
     for varname, values in ds.data_vars.items():
+        try:
+            ds[varname] = ds[varname].astype(float)
+        except:
+            pass
         # If flag is NaN, data is missing
         if '_flg' in varname:
             print(varname)
-            ii, = np.where(np.isnan(values))
+            ii, = np.where(pd.isnull(values))
             ds[varname][ii] = 9.
         # Remove "raw" variables
         if '_raw' in varname:
@@ -561,7 +565,7 @@ def add_flags(ds):
     ds['sal_flg'][ii] = 3.
 
     # isolated salinity points
-    ii, = np.where(np.isnan(ds['sal'][1:-1]+ds['sal'][2:]) & np.isnan(ds['sal'][1:-1]+ds['sal'][:-2]))
+    ii, = np.where(pd.isnull(ds['sal'][1:-1]+ds['sal'][2:]) & pd.isnull(ds['sal'][1:-1]+ds['sal'][:-2]))
     ii = ii + 1
     ds['sal_flg'][ii] = 3.
 
@@ -584,10 +588,10 @@ def add_flags(ds):
     ds['do2_flg'][ii] = 3.
 
     # isolated oxygen points(or pairs of points)
-    ii, = np.where(np.isnan(ds['do2'][1:-1]+ds['do2'][2:]) & np.isnan(ds['do2'][1:-1]+ds['do2'][:-2]))
+    ii, = np.where(pd.isnull(ds['do2'][1:-1]+ds['do2'][2:]) & pd.isnull(ds['do2'][1:-1]+ds['do2'][:-2]))
     ii = ii + 1
     ds['do2_flg'][ii] = 3.
-    ii, = np.where(np.isnan(ds['do2'][1:-1]+ds['do2'][2:]) & np.isnan(ds['do2'][1:-1]+ds['do2'][:-2]))
+    ii, = np.where(pd.isnull(ds['do2'][1:-1]+ds['do2'][2:]) & pd.isnull(ds['do2'][1:-1]+ds['do2'][:-2]))
     ii = ii + 1
     ds['do2_flg'][ii] = 3.
 
@@ -628,7 +632,7 @@ def add_flags(ds):
             ds[var+'_flg'][ii] = 3.
 
     # manual flags (created with graphical interface using manual_flag.py)
-    flag_vars = ['sal','do2','ph']
+    flag_vars = ['temp', 'sal','do2','ph']
 
     for var in flag_vars:
         flagi,unflagi = load_manual_flags(ds,var)
