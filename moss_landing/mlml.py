@@ -18,10 +18,7 @@ import numpy as np
 from glob import glob
 from datetime import datetime, timedelta
 from manual_flag import load_manual_flags
-try:
-    import pandas as pd
-except ImportError:
-    pass
+import pandas as pd
 try:
     import xarray as xr
 except ImportError:
@@ -56,7 +53,8 @@ overwrite   - boolean specifying whether to overwrite the existing files, only u
 
     # Additional processing
     d = cleanup_raw(d)
-    d = add_flags(d)
+    if station == 'seawater':
+        d = add_flags(d)
 
     d.attrs['history'] = d.attrs['history'] + 'netcdf file created using mlml.make_netcdf(station_dir'+station_dir+',netcdf_dir='+netcdf_dir+',netcdf_prefix='+netcdf_prefix+',station='+station+'download='+str(download)+',overwrite='+str(overwrite)+'): ' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ')'
 
@@ -64,7 +62,7 @@ overwrite   - boolean specifying whether to overwrite the existing files, only u
     prefix = os.path.join(netcdf_dir,netcdf_prefix)
     years, datasets = zip(*d.groupby('time.year'))
     paths = [prefix+'%s.nc' % y for y in years]
-    xr.save_mfdataset(datasets, paths)
+    xr.save_mfdataset(datasets, paths, mode='w')
 
 def download_station_data(station_dir,station='seawater',overwrite=True):
     '''
@@ -98,11 +96,9 @@ overwrite   - boolean specifying whether to overwrite the existing files
     csv_list = re.findall(file_pattern,html_string)
 
     # get updated readme file
-    urlr = urlopen(station_url + '1_README.TXT')
-    fr = open(station_dir + '1_README.TXT','w')
-    fr.write(str(urlr.read()))
-    fr.close()
-    urlr.close()
+    with urlopen(station_url + '1_README.txt') as urlr:
+        with open(station_dir + '1_README.txt','w') as fr:
+            fr.write(str(urlr.read()))
 
     # loop through each remote csv file and download if:
     # the file does not exist, the overwrite option is True or it is the last
@@ -115,12 +111,10 @@ overwrite   - boolean specifying whether to overwrite the existing files
                             overwrite == True,
                             csv_name == csv_list[-1]]
         if any(write_conditions):
-            urlfile = urlopen(remote_file)
-            f = open(local_file,'w')
-            filebytes = urlfile.read()
-            f.write(filebytes.decode('utf8'))
-            f.close()
-            urlfile.close()
+            with urlopen(remote_file) as urlfile:
+                with open(local_file,'w') as f: 
+                    filebytes = urlfile.read()
+                    f.write(filebytes.decode('utf8'))
 
 def read_csv_data(data_dir,format='dict'):
     '''
@@ -157,25 +151,36 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
                 d[var] = []
 
         # specify which columns contain numeric data
-        floatcols = range(2,len(varnames))
-        allcols = range(0,len(varnames))
-        strcols = list(set(allcols)-set(floatcols))
+        if varnames[0] == '': # extra first column in some files
+            floatcols = range(3,len(varnames))
+            allcols = range(1,len(varnames))
+            strcols = list(set(allcols)-set(floatcols))
+        else:
+            floatcols = range(2,len(varnames))
+            allcols = range(0,len(varnames))
+            strcols = list(set(allcols)-set(floatcols))
 
         # get numeric data, with missing values as NaN
         try:
-            datamasked = np.genfromtxt(file_name,
-                                 skip_header=1,
-                                 delimiter=',',
-                                 missing_values='-99999',
-                                 usemask=True)
-            data = datamasked.filled(np.nan)
+            datatmp = pd.read_csv(file_name,
+                        na_values=-99999).values
+            # filter lines where newline character in suna string puts garbage on following row
+            badi, = np.where(datatmp[:, 0] == '"') 
+            data = pd.read_csv(file_name,
+                        na_values=-99999,
+                        skiprows=badi).values
 
             # get string data
-            datastr = np.genfromtxt(file_name,
-                             skip_header=1,
-                             delimiter=',',
-                             usecols=tuple(strcols),
-                             dtype=str)
+            datastrtmp = np.genfromtxt(file_name,
+                                skip_header=1,
+                                delimiter=',',
+                                usecols=tuple(strcols),
+                                dtype=str)
+            badi2, = np.where(datastrtmp[:, 0] == '"') 
+            datastr = pd.read_csv(file_name,
+                        na_values=-99999,
+                        usecols=tuple(strcols),
+                        skiprows=badi).values
 
             # append data variables
             if data.size != 0:
@@ -193,6 +198,7 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
                         d[key] = np.append(d[key],np.nan*np.zeros(np.shape(data[:,2]))) # append NaN's
 
         except:
+            print('could not read '+file_name)
             pass
 
     # create date variables
@@ -216,11 +222,11 @@ Output: dictionary, pandas DataFrame or xarray DataSet with keys/variable names 
             format = 'dict'
             print("Warning: pandas not installed, loading MLML data in dictionary format instead")
 
-    if format is 'dataframe':
+    if format == 'dataframe':
         # turn dictionary into pandas dataframe
         d = pd.DataFrame(d,index=dtime)
         d.index.name = 'time'
-    elif format is 'dataset':
+    elif format == 'dataset':
         # turn dictionary in xarray dataset, using dataframe as intermediate format
         d = pd.DataFrame(d,index=dtime)
         d.index.name = 'time'
@@ -253,7 +259,7 @@ def add_metadata(ds,station,readme_file):
 Add metadata to xarray dataset. Currently this adds lat and lon coordinates and puts the contents of the readme in an attribute. For the weather data, the anemometer height is also added as a coordinate.
     """
 
-    if station is 'seawater':
+    if station == 'seawater':
         ds.coords['lon'] = -121.7915
         ds.coords['lat'] = 36.8025
 
@@ -269,8 +275,7 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         ds.attrs['Conventions'] = 'CF-1.6'
         ds.attrs['title'] = 'Historical Seawater Data - Moss Landing Marine Labs'
         ds.attrs['institution'] = 'Moss Landing Marine Labs'
-        ds.attrs['disclaimer'] = 'Moss Landing Marine Laboratories (MLML) provides these data "as is", with no warranty, expressed or implied, of the data quality or consistency. It is provided without support and without obligation on the part of MLML to assist in its use, correction, modification, or enhancement. For use in publication, authors should obtain written permission from the director of MLML, and acknowledge MLML as the data source in those publications.'
-        ds.attrs['contacts'] = 'Data Manager: Jason Adelaars (jadelaars@mlml.calstate.edu), MLML Director: Jim Harvey (jharvey@mlml.calstate.edu)'
+        ds.attrs['disclaimer'] = 'Moss Landing Marine Laboratories (MLML) provides these data "as is", with no warranty, expressed or implied, of the data quality or consistency. It is provided without support and without obligation on the part of MLML to assist in its use, correction, modification, or enhancement. For use in publication, authors should acknowledge MLML as the data source in those publications.'
         ds.attrs['citation'] = 'Moss Landing Marine Labs. Historical Seawater Data (insert date range) [Internet]. [cited (insert date of download)]. Available from: pubdata.mlml.calstate.edu'
         ds.attrs['comment'] = 'Seawater data observations are collected from raw seawater drawn through an intake pipe. Prior to October 31, 2013, the intake opening was set at a depth of ~18.3 m (60ft) below mean lower low water (MLLW). Due to sediment build-up around the pipe, the intake opening was raised to ~16.6m (54.4ft) below MLLW on October 31, 2013. The intake opening is located at 36.8025N and 121.7915W\\r\\nThe seawater sensors are cleaned of biofouling agents on a weekly/twice-weekly interval, though some data drift can be observed in transmission, beam attenution, and fluorescence. Full maintenance Log available at: https://docs.google.com/a/mlml.calstate.edu/spreadsheet/ccc?key=0AnH2QAt-nlAldEFwY2ZyNUV6amJtLXllMDljdmM1SFE&pli=1#gid=0'
 
@@ -422,7 +427,14 @@ Add metadata to xarray dataset. Currently this adds lat and lon coordinates and 
         ds['nitrogen'].attrs['ancillary_variables'] = 'nitrate_flg'
         ds['nitrogen'].attrs['comment'] = 'sensor: SUNA v2'
 
-    elif station is 'weather':
+        ds['tide_flg'].attrs['long_name'] = 'tiden flag'
+        ds['tide_flg'].attrs['standard_name'] = 'status_flag'
+        ds['tide_flg'].attrs['flag_values'] = flag_values
+        ds['tide_flg'].attrs['flag_meanings'] = flag_meanings
+
+        ds['tide'].attrs['long_name'] = 'tide height at NOAA Monterey tide gauge'
+
+    elif station == 'weather':
         ds.coords['lon'] = -121.78842
         ds.coords['lat'] = 36.80040
         ds.coords['z'] = 3.3
@@ -444,20 +456,25 @@ def cleanup_raw(ds):
 
     # Loop through variables
     for varname, values in ds.data_vars.items():
+        try:
+            ds[varname] = ds[varname].astype(float)
+        except:
+            pass
         # If flag is NaN, data is missing
         if '_flg' in varname:
-            ii, = np.where(np.isnan(values))
+            print(varname)
+            ii, = np.where(pd.isnull(values))
             ds[varname][ii] = 9.
         # Remove "raw" variables
         if '_raw' in varname:
             ds = ds.drop(varname)
     if 'phrawv' in ds.keys():
         ds = ds.drop('phrawv')
-    # Remove tide variables
-    if 'tide' in ds.keys():
-        ds = ds.drop('tide')
-    if 'tide_flg' in ds.keys():
-        ds = ds.drop('tide_flg')
+    # # Remove tide variables
+    # if 'tide' in ds.keys():
+    #     ds = ds.drop('tide')
+    # if 'tide_flg' in ds.keys():
+    #     ds = ds.drop('tide_flg')
     # Remove extra time variables
     if 'utc_time' in ds.keys():
         ds = ds.drop('utc_time')
@@ -548,7 +565,7 @@ def add_flags(ds):
     ds['sal_flg'][ii] = 3.
 
     # isolated salinity points
-    ii, = np.where(np.isnan(ds['sal'][1:-1]+ds['sal'][2:]) & np.isnan(ds['sal'][1:-1]+ds['sal'][:-2]))
+    ii, = np.where(pd.isnull(ds['sal'][1:-1]+ds['sal'][2:]) & pd.isnull(ds['sal'][1:-1]+ds['sal'][:-2]))
     ii = ii + 1
     ds['sal_flg'][ii] = 3.
 
@@ -571,10 +588,10 @@ def add_flags(ds):
     ds['do2_flg'][ii] = 3.
 
     # isolated oxygen points(or pairs of points)
-    ii, = np.where(np.isnan(ds['do2'][1:-1]+ds['do2'][2:]) & np.isnan(ds['do2'][1:-1]+ds['do2'][:-2]))
+    ii, = np.where(pd.isnull(ds['do2'][1:-1]+ds['do2'][2:]) & pd.isnull(ds['do2'][1:-1]+ds['do2'][:-2]))
     ii = ii + 1
     ds['do2_flg'][ii] = 3.
-    ii, = np.where(np.isnan(ds['do2'][1:-1]+ds['do2'][2:]) & np.isnan(ds['do2'][1:-1]+ds['do2'][:-2]))
+    ii, = np.where(pd.isnull(ds['do2'][1:-1]+ds['do2'][2:]) & pd.isnull(ds['do2'][1:-1]+ds['do2'][:-2]))
     ii = ii + 1
     ds['do2_flg'][ii] = 3.
 
@@ -601,8 +618,8 @@ def add_flags(ds):
     d1[d1.str.contains('10130816')] = '20130816'
 
     d2[d2.isnull()] = d1[d2.isnull()]
-    dtime1 = pd.to_datetime(d1+' '+t1)
-    dtime2 = pd.to_datetime(d2+' '+t2)
+    dtime1 = pd.to_datetime(d1+' '+t1, format='mixed')
+    dtime2 = pd.to_datetime(d2+' '+t2, format='mixed')
 
     # add time before and after
     dtime1 = dtime1 - pd.Timedelta(30,'m')
@@ -615,7 +632,7 @@ def add_flags(ds):
             ds[var+'_flg'][ii] = 3.
 
     # manual flags (created with graphical interface using manual_flag.py)
-    flag_vars = ['sal','do2','ph']
+    flag_vars = ['temp', 'sal','do2','ph']
 
     for var in flag_vars:
         flagi,unflagi = load_manual_flags(ds,var)

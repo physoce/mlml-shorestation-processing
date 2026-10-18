@@ -92,11 +92,11 @@ The file name includes:
     fig = plt.figure(figsize=(11, 7))
     ax = fig.add_subplot(1, 1, 1)
     if flag_mode == 'unflag':
-        ax.plot(dnum,ds[var],'k-',lw=0.5)
-    ax.plot(dnum[good],ds[var][good],'c-',lw=0.5)
-    ax.plot(dnum[good],ds[var][good],'bo',ms=1)
-    ax.plot(dnum[flagi],ds[var][flagi],'r.')
-    ax.plot(dnum[unflagi],ds[var][unflagi],'c.')
+        ax.plot(dnum,ds[var_plt],'k-',lw=0.5)
+    ax.plot(dnum,ds[var_plt],'c-',lw=0.5)
+    ax.plot(dnum[good],ds[var_plt][good],'bo',ms=1)
+    ax.plot(dnum[flagi],ds[var_plt][flagi],'r.')
+    ax.plot(dnum[unflagi],ds[var_plt][unflagi],'c.')
     xl = plt.xlim()
     yl = plt.ylim()
 
@@ -182,4 +182,3 @@ if __name__ == '__main__':
     ds.load()
 
     manual_flag(ds)
-    #load_manual_flags(ds)
