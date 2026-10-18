@@ -1,0 +1,15 @@
+[project]
+name = "mlml-shorestation-processing"
+version = "0.0.1"
+authors = [
+  { name="Tom Connolly", email="thomas.p.connolly@sjsu.edu" },
+]
+description = "Tool for processing MLML shore station data"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "CC-BY-NC"
+license-files = ["LICEN[CS]E*"]
