@@ -3,3 +3,5 @@ __pycache__/
 temp/
 .ipynb_checkpoints
 *.pyc
+mlml_shorestation_processing.egg-info/
+build/
