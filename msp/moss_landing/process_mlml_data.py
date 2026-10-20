@@ -5,7 +5,7 @@ import mlml
 import numpy as np
 import xarray as xr
 
-sys.path.append('..')
+sys.path.append('../util/')
 import mlml_data_path
 
 # get paths of data files
