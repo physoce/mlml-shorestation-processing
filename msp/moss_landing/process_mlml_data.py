@@ -25,7 +25,7 @@ weather_nc_prefix = 'moss_landing_weather_'
 
 run_download = True
 overwrite_download = False
-run_makencfile = True
+run_makencfile = False
 run_download_weather = False
 run_makencfile_weather = False
 
